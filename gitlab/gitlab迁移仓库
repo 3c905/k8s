@@ -1,0 +1,32 @@
+mkdir -p /root/gitlab-move/old
+cd /root/gitlab-move
+
+获取旧的仓库名称空间加地址
+
+cd /var/opt/gitlab/git-data/repositories
+find . -type d -maxdepth 2 | grep .git | grep -v wiki > old-list
+
+拉取旧gitlab的仓库的所有代码分支标签
+#!/bin/bash
+cd old
+for repo in $(cat ../old-list)
+do
+  git clone --mirror http://lei.xu:Aa_123456@192.168.0.244:10080/$repo
+  cd $repo
+  git branch -r | grep -v '\->' | while read remote; do git branch --track "${remote#origin/}" "$remote"; done
+  git fetch --all
+done
+
+创新的仓库名称列表
+ll old | awk '{print $9}' > new-list
+
+推送所有仓库的分支标签到新的gitlab
+#!/bin/bash
+cd old
+for repo in $(cat ../new-list)
+do
+  cd $repo
+  git remote set-url --push origin http://root:7oh8zz5oh-20200803@10.0.1.247:30080/linchuang/$repo
+  git push --mirror http://root:7oh8zz5oh-20200803@10.0.1.247:30080/linchuang/$repo
+  cd ..
+done
