@@ -14,7 +14,7 @@ global:
   #mtp_auth_password: xxx
 # 自定义 通知的模板的 目录 或者 文件.
 #templates:
-#  - '/usr/local/prometheus/alertmanager/template/wechat.tmpl'
+#  - '*.tmpl'
 # 路由树的根节点, 每个传进来的报警从这里开始.
 route:
 
