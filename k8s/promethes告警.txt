@@ -1,0 +1,49 @@
+kubectl delete secret alertmanager-main -n monitoring
+#文件名必须是altermanager.yaml---------------------------------------------------
+kubectl create secret generic alertmanager-main --from-file=alertmanager.yaml -n monitoring
+
+
+#----文件altermanager.yaml 内容-------------------------------------------------
+global:
+  # 每2分钟检查一次是否恢复
+  resolve_timeout: 2m
+  # SMTP的相关配置
+  #smtp_smarthost: smtp.263.net:587
+  #smtp_from: no-reply@xxx.com
+  #mtp_auth_username: no-reply@xxx.com 
+  #mtp_auth_password: xxx
+# 自定义 通知的模板的 目录 或者 文件.
+#templates:
+#  - '/usr/local/prometheus/alertmanager/template/wechat.tmpl'
+# 路由树的根节点, 每个传进来的报警从这里开始.
+route:
+
+  # 将传入的报警中有这些标签的分为一个组.
+  # 比如, cluster=A 和 alertname=LatencyHigh 会分成一个组.
+  group_by: ['alertname']
+
+  # 指分组创建多久后才可以发送压缩的警报，也就是初次发警报的延时.
+  # 这样会确保第一次通知的时候, 有更多的报警被压缩在一起.
+  group_wait: 10s
+
+  # 当第一个通知发送，等待多久发送压缩的警报
+  group_interval: 10s
+
+  # 默认的接收器
+  receiver: 'wechat'
+
+  # 如果报警发送成功, 等待多久重新发送一次
+  repeat_interval: 1h
+receivers:
+#SMTP配置
+#- name: 'web.hook'
+#  email_configs:
+#  - to: 'xxx@chtwm.com'
+- name: 'wechat'
+  wechat_configs:
+  - corp_id: 'wwefc34cae5db0a868'
+    to_party: '77'
+    agent_id: '1000025'
+    api_secret: 'qPsDkkBmbjztXoT5Txiqgj4BeCeQ-pFgOEOrgLPkAk'
+    send_resolved: true
+    api_url: 'https://qyapi.weixin.qq.com/cgi-bin/'
