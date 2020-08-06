@@ -1,0 +1,77 @@
+关闭selinux
+sed -i 's/SELINUX=enforcing/SELINUX=disabled/' /etc/selinux/config
+
+修改时区
+timedatectl set-timezone Asia/Shanghai
+
+官网安装指导页面
+https://about.gitlab.com/install/
+
+官网手动安装及安装包下载页面
+https://docs.gitlab.com/omnibus/manual_install.html
+
+官方源
+curl -s https://packages.gitlab.com/install/repositories/gitlab/gitlab-ce/script.rpm.sh | sh
+
+依赖包安装
+yum install -y curl policycoreutils-python openssh-server postfix vim
+systemctl enable sshd
+systemctl start sshd
+systemctl enable postfix
+systemctl start postfix
+firewall-cmd --permanent --add-service=http
+firewall-cmd --permanent --add-service=https
+systemctl reload firewalld
+
+安装下载到的rpm包
+rpm -ivh /tmp/gitlab-ce-11.9.6-ce.0.el7.x86_64.rpm
+
+gitlab配置文件
+/etc/gitlab/gitlab.rb
+在可此文件设置访问地址及端口
+如果不行 修改此文件
+/opt/gitlab/embedded/service/gitlab-rails/config/gitlab.yml
+
+运行初始化动作
+gitlab-ctl reconfigure
+
+默认用户名
+root
+第一次登陆需设置密码
+
+gitlab相关命令
+
+gitlab-ctl status #查看状态
+gitlab-ctl start # 启动Gitlab所有组件
+gitlab-ctl stop # 停止Gitlab所有组件
+gitlab-ctl restart # 重启Gitlab所有组
+
+备份数据
+gitlab-rake gitlab:backup:create
+备份文件在
+/var/opt/gitlab/backups/
+
+Gitlab自动备份
+实现每天凌晨2点进行一次自动备份:通过crontab使用备份命令实现
+0 2 * * * /opt/gitlab/bin/gitlab-rake gitlab:backup:create
+
+备份保留7天
+可设置只保留最近7天的备份，编辑配置文件 /etc/gitlab/gitlab.rb
+数值单位：秒
+gitlab_rails['backup_keep_time'] = 604800
+
+Gitlab恢复
+重新加载gitlab配置文件
+gitlab-ctl reconfigure
+停止相关数据连接服务
+gitlab-ctl stop unicorn
+gitlab-ctl stop sidekiq
+从1499242399编号备份中恢复
+gitlab-rake gitlab:backup:restore BACKUP=1499242399_2017_07_05_9.2.6
+指定文件名的格式类似 1499242399_2017_07_05_9.2.6 程序会自动在文件名后补上_gitlab_backup.tar 一定按这样的格式指定 否则会出现 The backup file does not exist! 的错误
+启动Gitlab
+sudo gitlab-ctl start
+
+gitlab迁移
+迁移如同备份与恢复的步骤一样, 只需要将老服务器/var/opt/gitlab/backups目录下的备份文件拷贝到新服务器上的/var/opt/gitlab/backups即可(如果你没修改过默认备份目录的话). 
+但是需要注意的是新服务器上的Gitlab的版本必须与创建备份时的Gitlab版本号相同. 比如新服务器安装的是最新的7.60版本的Gitlab, 那么迁移之前, 最好将老服务器的Gitlab 升级为7.60在进行备份.
