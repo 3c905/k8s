@@ -1,6 +1,6 @@
 kubectl delete secret alertmanager-main -n monitoring
 #文件名必须是altermanager.yaml---------------------------------------------------
-kubectl create secret generic alertmanager-main --from-file=alertmanager.yaml -n monitoring
+kubectl create secret generic alertmanager-main --from-file=alertmanager.yaml ----from-file=wechat.tmpl -n monitoring
 
 
 #----文件altermanager.yaml 内容-------------------------------------------------
@@ -47,3 +47,20 @@ receivers:
     api_secret: 'qPsDkkBmbjztXoT5Txiqgj4BeCeQ-pFgOEOrgLPkAk'
     send_resolved: true
     api_url: 'https://qyapi.weixin.qq.com/cgi-bin/'
+
+#-------wechat.tmpl-----------------------------------------
+{{ define "wechat.default.message" }}
+{{ range $i, $alert :=.Alerts }}
+===alertmanager监控报警===
+告警状态：{{   .Status }}
+告警级别：{{ $alert.Labels.severity }}
+告警类型：{{ $alert.Labels.alertname }}
+告警应用：{{ $alert.Annotations.summary }}
+故障主机：{{ $alert.Labels.instance }}
+告警主题：{{ $alert.Annotations.summary }}
+触发阀值：{{ $alert.Annotations.value }}
+告警详情：{{ $alert.Annotations.description }}
+触发时间：{{ $alert.StartsAt.Format “2006-01-02 15:04:05” }}
+===========end============
+{{ end }}
+{{ end }}
