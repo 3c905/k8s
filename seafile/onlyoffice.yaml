@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: onlyoffice-srv
+  name: onlyoffice-srv
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: onlyoffice-srv
+  template:
+    metadata:
+      labels:
+        app: onlyoffice-srv
+    spec:
+      imagePullSecrets:
+      - name: harbor-sj
+      containers:
+      - name: onlyoffice
+        image: 10.0.0.241/library/onlyoffice-cn:latest
+        #image: onlyoffice/documentserver
+        #imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 80
+        - containerPort: 5432
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: onlyoffice-srv
+  name: onlyoffice
+  namespace: default
+spec:
+  type: NodePort
+  ports:
+  - protocol: TCP
+    name: http
+    port: 80
+    targetPort: 80
+    nodePort: 58082
+  selector: 
+    app: onlyoffice-srv

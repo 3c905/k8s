@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  namespace: default
+  name: seafile-pv
+spec:
+  capacity:
+    storage: 325Gi
+  volumeMode: Filesystem
+  accessModes:
+    #- ReadWriteOnce
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  mountOptions:
+    - hard
+    - nfsvers=4.2
+  nfs:
+    path: /u/medsci/seafile
+    server: 10.0.0.246
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: seafile-pvc 
+  namespace: default
+spec:
+  accessModes:
+    - ReadWriteMany 
+  resources:
+    requests:
+      storage: 325Gi 

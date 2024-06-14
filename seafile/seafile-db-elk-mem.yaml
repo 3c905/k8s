@@ -1,0 +1,159 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: seafile-db
+  name: seafile-db
+  namespace: default
+spec:
+  replicas: 1
+  selector: 
+    matchLabels: 
+      app: seafile-db
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: seafile-db
+    spec:
+      containers:
+      - env:
+        - name: MYSQL_LOG_CONSOLE
+          value: "true"
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: seafile-db-cred
+              key: password 
+        image: mariadb:10.5
+        name: seafile-mysql
+        volumeMounts:
+        - mountPath: /var/lib/mysql
+          subPath: db
+          name: seafile-db-nfs
+
+      restartPolicy: Always
+      volumes:
+      - name: seafile-db-nfs
+        persistentVolumeClaim:
+          claimName: seafile-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: seafile-db
+  name: db
+  namespace: default
+spec:
+  ports:
+  - name: "3306"
+    port: 3306
+    targetPort: 3306
+  selector:
+    app: seafile-db
+  type: ClusterIP
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: seafile-mc
+  name: seafile-mc
+  namespace: default
+spec:
+  replicas: 1
+  selector: 
+    matchLabels: 
+      app: seafile-mc
+  template:
+    metadata:
+      labels:
+        app: seafile-mc
+    spec:
+      containers:
+      - command:
+        - memcached
+        - -m
+        - "256"
+        image: memcached:1.5.6
+        name: seafile-memcached
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: seafile-mc
+  name: memcached
+  namespace: default
+spec:
+  ports:
+  - name: "11211"
+    port: 11211
+    targetPort: 11211
+  selector:
+    app: seafile-mc
+  type: ClusterIP
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: seafile-elk
+  name: seafile-elk
+  namespace: default
+spec:
+  replicas: 1
+  selector: 
+    matchLabels: 
+      app: seafile-elk
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: seafile-elk
+    spec:
+      containers:
+      - env:
+        - name: ES_JAVA_OPTS
+          value: -Xms1g -Xmx1g
+        - name: discovery.type
+          value: single-node
+        image: seafileltd/elasticsearch-with-ik:5.6.16
+        name: seafile-elasticsearch
+        resources:
+          limits:
+            memory: "2147483648"
+        volumeMounts:
+        - mountPath: /usr/share/elasticsearch/data
+          subPath: elk
+          name: seafile-elk-nfs
+      restartPolicy: Always
+      volumes:
+      - name: seafile-elk-nfs
+        persistentVolumeClaim:
+          claimName: seafile-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: seafile-elk
+  name: elasticsearch
+  namespace: default
+spec:
+  ports:
+  - name: "9200"
+    port: 9200
+    targetPort: 9200
+  - name: "9300"
+    port: 9300
+    targetPort: 9300
+  selector:
+    app: seafile-elk
+  type: ClusterIP

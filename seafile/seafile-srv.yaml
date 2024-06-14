@@ -1,0 +1,80 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: seafile-srv
+  name: seafile-srv
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: seafile-srv
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: seafile-srv
+    spec:
+      containers:
+      - env:
+        - name: DB_HOST
+          value: db
+        - name: DB_ROOT_PASSWD
+          valueFrom:
+            secretKeyRef:
+              name: seafile-db-cred
+              key: password 
+        - name: SEAFILE_ADMIN_EMAIL
+          valueFrom:
+            secretKeyRef:
+              name: seafile-srv-cred
+              key: username 
+        - name: SEAFILE_ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: seafile-srv-cred
+              key: password 
+        - name: SEAFILE_SERVER_HOSTNAME
+          value: 127.0.0.1
+        - name: SEAFILE_SERVER_LETSENCRYPT
+          #value: "true"
+          value: "false"
+        #image: docker.seadrive.org/seafileltd/seafile-pro-mc:latest
+        image: seafileltd/seafile-mc:latest
+        name: seafile
+        ports:
+        - containerPort: 80
+        - containerPort: 443
+        volumeMounts:
+        - mountPath: /shared
+          subPath: seafile
+          name: seafile-srv-nfs
+      restartPolicy: Always
+      volumes:
+      - name: seafile-srv-nfs
+        persistentVolumeClaim:
+          claimName: seafile-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: seafile-srv
+  name: seafile
+  namespace: default
+spec:
+  type: NodePort
+  ports:
+  - name: "80"
+    port: 80
+    targetPort: 80
+    nodePort: 58080
+  - name: "443"
+    port: 443
+    targetPort: 443
+    #nodePort: 58443
+  selector:
+    app: seafile-srv
